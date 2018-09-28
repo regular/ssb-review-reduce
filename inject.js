@@ -138,13 +138,21 @@ return function (version, reduce, map, codec, initial) {
       },
       createSink: function (cb) {
         return Drain(function (data) {
-          var _data = map(data.value, data.seq)
-          if(_data != null) value.set(reduce(value.value, _data, data.seq))
-          since.set(data.seq)
-          notify(_data)
-          //if we are now in sync with the log, maybe write.
-          if(since.value === log.since.value)
-            write()
+          if (data.since !== undefined) {
+            since.set(data.since)
+            //if we are now in sync with the log, maybe write.
+            if(since.value === log.since.value)
+              write()
+            return
+          }
+          var _data = map(data.value, data.value.seq, true)
+          var _old_data = data.old_value && map(data.value, data.old_value.seq, false)
+          if(_data != null) value.set(reduce(
+            value.value,
+            _data, data.value.seq,
+            _old_data, data.old_value && data.old_value.seq
+          ))
+          notify([_data, _old_data])
         }, cb)
       },
       destroy: function (cb) {

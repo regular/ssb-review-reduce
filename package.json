@@ -20,6 +20,7 @@
     "flumedb": "^0.4.1",
     "flumelog-memory": "^0.1.2",
     "flumelog-offset": "^3.2.2",
+    "mkdirp": "^0.5.1",
     "tape": "^4.6.3"
   },
   "scripts": {
