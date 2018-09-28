@@ -53,7 +53,7 @@ return function (version, reduce, map, codec, initial) {
   return function (log, name) { //name is where this view is mounted
     var acc, since = Obv()
     var value = Obv(), state
-
+    var currValue, currSeq
     //if we are in sync, and have not written recently, then write the current state.
 
     // if the log is persisted,
@@ -71,9 +71,9 @@ return function (version, reduce, map, codec, initial) {
 
     function write () {
       w.write({
-        seq: since.value,
+        seq: currSeq, 
         version: version,
-        value: value.value
+        value: currValue
       })
     }
 
@@ -141,8 +141,12 @@ return function (version, reduce, map, codec, initial) {
           if (data.since !== undefined) {
             since.set(data.since)
             //if we are now in sync with the log, maybe write.
-            if(since.value === log.since.value)
+            if(since.value === log.since.value) {
+              // snapshot current state
+              Object.assign({}, currValue, value.value)
+              currSeq = since.value
               write()
+            }
             return
           }
           var _data = map(data.value, data.value.seq, true)
