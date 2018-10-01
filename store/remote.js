@@ -14,10 +14,12 @@ module.exports = function (get, LocalStore, estimate) {
     return {
       get: function (cb) {
         local.get(function (_, data) {
+          console.log('XXX local.get', data)
           if(!data)
             return update()
 
           get({values: false, meta: true}, function (_, meta) {
+            console.log('XXX remote get meta', meta)
             if (data.seq === meta.seq)
               cb(null, data) //use local data.
             //decide whether to replicate view or stream
@@ -29,7 +31,9 @@ module.exports = function (get, LocalStore, estimate) {
               update()
           })
           function update () {
+            console.log('XXX UPDATE')
             get({values: true, meta: true}, function (err, _data) {
+              console.log('XXX update remote get meta/data', _data)
               if(err || !_data) cb(null, data)
               local.set(_data, function () { cb(err, _data) })
             })          }

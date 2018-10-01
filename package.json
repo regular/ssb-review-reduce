@@ -1,8 +1,7 @@
 {
-  "name": "flumeview-reduce",
-  "description": "flumeview as a reduce function",
+  "name": "ssb-review-reduce",
+  "description": "flumeview-reduce, but for mutable ssb messages",
   "version": "1.3.13",
-  "homepage": "https://github.com/flumedb/flumeview-reduce",
   "repository": {
     "type": "git",
     "url": "git://github.com/flumedb/flumeview-reduce.git"
@@ -10,6 +9,7 @@
   "dependencies": {
     "async-single": "^1.0.5",
     "atomic-file": "^1.1.3",
+    "clone": "^2.1.2",
     "deep-equal": "^1.0.1",
     "flumecodec": "0.0.0",
     "obv": "0.0.0",

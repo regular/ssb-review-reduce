@@ -5,6 +5,7 @@ var path = require('path')
 var deepEqual = require('deep-equal')
 var Notify = require('pull-notify')
 var AsyncSingle = require('async-single')
+var clone = require('clone')
 
 /*
 Replication Ideas.
@@ -70,6 +71,7 @@ return function (version, reduce, map, codec, initial) {
     }, opts)
 
     function write () {
+      console.log('Writing JSON', currSeq, currValue)
       w.write({
         seq: currSeq, 
         version: version,
@@ -143,7 +145,7 @@ return function (version, reduce, map, codec, initial) {
             //if we are now in sync with the log, maybe write.
             if(since.value === log.since.value) {
               // snapshot current state
-              Object.assign({}, currValue, value.value)
+              currValue = value.value && clone(value.value, false)
               currSeq = since.value
               write()
             }
