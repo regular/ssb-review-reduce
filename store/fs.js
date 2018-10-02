@@ -30,7 +30,7 @@ module.exports = function (dir, name, codec) {
     set: function (value, cb) {
       value = codec.encode(value)
       self.size = value.length
-      console.log('JSON write:', value, dir, name)
+      console.log('JSON actually writing:', value, dir, name)
       af.set(value, cb)
     },
     destroy: function (cb) {

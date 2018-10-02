@@ -12,7 +12,7 @@ function toValue(kv) {
   return kv.value.content.value
 }
 
-var file = '/tmp/test_flumeview-reduce/'+Date.now()+'/log.offset'
+var file = '/tmp/test_ssb-review-reduce/'+Date.now()+'/log.offset'
 var db = u.createDB(file)
 var revisions = Revisions.init(db)
 revisions.use('view', Reduce(1, sum, toValue))

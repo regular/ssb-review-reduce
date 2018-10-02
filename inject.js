@@ -62,16 +62,19 @@ return function (version, reduce, map, codec, initial) {
     // save whenever the view gets in sync with the log,
     // as long as it hasn't beet updated in 1 minute.
 
-
-    var w = AsyncSingle(function (value, cb) {
+    function actuallyWrite(value, cb) {
+      console.log('Actually writing', value)
       if(state) {
         if(value) state.set(value, cb)
         else state.destroy(cb)
       } else cb()
-    }, opts)
+    }
+
+    var w = AsyncSingle(actuallyWrite, opts)
 
     function write () {
-      console.log('Writing JSON', currSeq, currValue)
+      if (currSeq == -1) return
+      console.log('Maybe writing JSON', currSeq, currValue)
       w.write({
         seq: currSeq, 
         version: version,
@@ -167,6 +170,7 @@ return function (version, reduce, map, codec, initial) {
         w.close(cb)
       },
       close: function (cb) {
+        console.log('Closing reduce view')
         notify.abort(true)
         if(!since.value || !state) return cb()
         w.close(cb)
