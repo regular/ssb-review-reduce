@@ -13,12 +13,12 @@ var ts = module.exports.ts = (function(start){
   return function() {return start++}
 })(Date.now())
 
-function msg(key, revisionRoot, revisionBranch) {
+function msg(key, revisionRoot, revisionBranch, content) {
   var ret = {
     key,
     value: {
       timestamp: ts(),
-      content: { }
+      content: content || {}
     }
   }
   if (revisionRoot) ret.value.content.revisionRoot = revisionRoot

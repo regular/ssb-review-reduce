@@ -155,7 +155,8 @@ return function (version, reduce, map, codec, initial) {
             return
           }
           var _data = map(data.value, data.value.seq, true)
-          var _old_data = data.old_value && map(data.value, data.old_value.seq, false)
+          var _old_data = data.old_value && map(data.old_value, data.old_value.seq, false)
+
           if(_data != null) value.set(reduce(
             value.value,
             _data, data.value.seq,
