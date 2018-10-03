@@ -94,9 +94,11 @@ return function (version, reduce, map, codec, initial) {
       state.get(function (err, data) {
         if(err || isEmpty(data) || data.version !== version) {
           since.set(-1) //overwrite old data.
+          console.log('SETTING initial')
           value.set(initial)
         }
         else {
+          console.log('SETTING data from store')
           value.set(data.value)
           since.set(data.seq)
         }
@@ -138,7 +140,10 @@ return function (version, reduce, map, codec, initial) {
           return Once(value.value)
         var source = notify.listen()
         //start by sending the current value...
-        source.push(value.value)
+        value.once(function() {
+          console.log('PUSH', value.value)
+          source.push(clone(value.value, false))
+        })
         return source
       },
       createSink: function (cb) {
