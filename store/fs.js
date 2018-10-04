@@ -20,7 +20,7 @@ module.exports = function (dir, name, codec) {
           self.size = value.length
           value = codec.decode(value)
           value.size = self.size
-          console.log('JSON read:', value, dir, name)
+          console.log('ssb-review-reduce: JSON read:', value, dir, name)
         } catch(err) {
           return cb(err)
         }
@@ -30,7 +30,7 @@ module.exports = function (dir, name, codec) {
     set: function (value, cb) {
       value = codec.encode(value)
       self.size = value.length
-      console.log('JSON actually writing:', value, dir, name)
+      console.log('ssb-review-reduce: writing:', value, dir, name)
       af.set(value, cb)
     },
     destroy: function (cb) {

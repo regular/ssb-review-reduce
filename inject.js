@@ -63,7 +63,6 @@ return function (version, reduce, map, codec, initial) {
     // as long as it hasn't beet updated in 1 minute.
 
     function actuallyWrite(value, cb) {
-      console.log('Actually writing', value)
       if(state) {
         if(value) state.set(value, cb)
         else state.destroy(cb)
@@ -74,7 +73,6 @@ return function (version, reduce, map, codec, initial) {
 
     function write () {
       if (currSeq == -1) return
-      console.log('Maybe writing JSON', currSeq, currValue)
       w.write({
         seq: currSeq, 
         version: version,
@@ -94,11 +92,9 @@ return function (version, reduce, map, codec, initial) {
       state.get(function (err, data) {
         if(err || isEmpty(data) || data.version !== version) {
           since.set(-1) //overwrite old data.
-          console.log('SETTING initial')
           value.set(initial)
         }
         else {
-          console.log('SETTING data from store')
           value.set(data.value)
           since.set(data.seq)
         }
@@ -141,7 +137,6 @@ return function (version, reduce, map, codec, initial) {
         var source = notify.listen()
         //start by sending the current value...
         value.once(function() {
-          console.log('PUSH', value.value)
           source.push(clone(value.value, false))
         })
         return source
@@ -176,7 +171,6 @@ return function (version, reduce, map, codec, initial) {
         w.close(cb)
       },
       close: function (cb) {
-        console.log('Closing reduce view')
         notify.abort(true)
         if(!since.value || !state) return cb()
         w.close(cb)
