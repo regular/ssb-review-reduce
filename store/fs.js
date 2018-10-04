@@ -1,5 +1,7 @@
 var path = require('path')
 var AtomicFile = require('atomic-file')
+var debug = require('debug')('ssb-review-reduce')
+
 function id (e) { return e }
 
 var none = {
@@ -20,7 +22,7 @@ module.exports = function (dir, name, codec) {
           self.size = value.length
           value = codec.decode(value)
           value.size = self.size
-          console.log('ssb-review-reduce: JSON read:', value, dir, name)
+          debug('JSON read: %o %s/%s', value, dir, name)
         } catch(err) {
           return cb(err)
         }
@@ -30,7 +32,7 @@ module.exports = function (dir, name, codec) {
     set: function (value, cb) {
       value = codec.encode(value)
       self.size = value.length
-      console.log('ssb-review-reduce: writing:', value, dir, name)
+      debug('writing: %o %s/%s', value, dir, name)
       af.set(value, cb)
     },
     destroy: function (cb) {

@@ -71,7 +71,7 @@ return function (version, reduce, map, codec, initial) {
 
     var w = AsyncSingle(actuallyWrite, opts)
 
-    function write () {
+    var write = function() {
       if (currSeq == -1) return
       w.write({
         seq: currSeq, 
@@ -112,7 +112,8 @@ return function (version, reduce, map, codec, initial) {
       methods: {get: 'async', stream: 'source', value: 'sync'},
       get: function (opts, cb) {
         if('function' === typeof opts) {
-          cb = opts, opts = null
+          cb = opts
+          opts = null
         }
         if(!opts || isEmpty(opts))
           cb(null, value.value)
