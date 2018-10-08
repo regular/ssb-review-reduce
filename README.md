@@ -1,43 +1,62 @@
-# flumeview-reduce
+# ssb-review-reduce
 
-A flumeview into a reduce function.
-Stream append-only log data in the order the log is written into a reduce function to calculate a state.
+A view into a reduce function for ssb-revisions.
+This is more or less a drop-in replacement for flumeview-reduce for scuttlebutt applications that need mutable documents.
+
+## What's different? (in respect to flumeview-reduce)
+
+- In case a message is a revision of a prior message (e.g. it has revisionRoot and revisionBranch properties), your map function is called twice: once for the old value, once for the new value. (your map function typically does not care whether it is called for the old or new value. However, if it does, this information is provided in the third argument: true for new, false for old).
+
+- These two values are then both provided to your reduce function, along with the flumelog sequence numbers of the messages representing the old and new vlues: 
+
+``` js
+reduce(acumulator, new_value, new_seq, old_value, old_seq)
+```
+
+(your reduce functon typically does not care about the sequence numbers)
+
+- in streaming mode, tuples (arrays of length two) of `[new_value, old_value]` are emitted, where `old_value==null` for original messages.
 
 ## Example
 
 ``` js
-var FlumeLog = require('flumelog-offset')
-var codec = require('flumecodec')
-var Flume = require('flumedb')
-var Reduce = require('flumeview-reduce')
+ssb.revisions.use('view', Reduce(
+  1, // version
+  function reduce(acc, item, seq, old_item, old_seq) {
+    return {
+      sum: acc.sum + item - (old_item ? old_item : 0),
+      squareSum: acc.squareSum + item*item - (old_item ? old_item * old_item : 0)
+    }
+  },
+  function map(kv, seq, is_new) {
+    return kv.value.content.value
+  },
+  null, { sum: 0, squareSum: 0 } // codec, initial state
+))
 
-//statistics exports a reduce function that calculates
-//mean, stdev, etc!
-var statistics = require('statistics')
-
-//initialize a flumelog with a codec.
-//this example uses flumelog-offset, but any flumelog is valid.
-var log = FlumeLog(file, 1024*16, codec.json) //use any flume log
-
-//attach the reduce function.
-var db = Flume(log)
-  .use('stats', Reduce(
-    1,                                    // version
-    statistics,                           // reducer
-    function (data) { return data.value } // map
-  ))
-
-db.append({value: 1}, function (err) {
-
-  db.stats.get(function (err, stats) {
-    console.log(stats) // => {mean: 1, stdev: 0, count: 1, sum: 1, ...}
+ssb.publish({type: 'number', value: 10}, function(err) {
+  ssb.publish({type: 'number', value: 30}, function(err, msg) {
+    ssb.publish({
+      type: 'number',
+      revisionRoot: msg.key,
+      revisionBranch: msg.key,
+      value: 20
+    }, function(err, msg2) {
+      revisions.view.get(function (err, value) {
+        t.deepEqual(value, { sum: 30, squareSum: 500 }, 'reduces state')
+      })
+    })
   })
 })
 ```
 
-## FlumeViewReduce(version, reduce, map?, codec?, initialState?) => FlumeView
+Another examples is [here](https://github.com/regular/ssb-revisions/blob/master/indexes/stats.js)
 
-construct a flumeview from this reduce function. `version` should be a number,
+The rest of this Readme is adapted from flumeview-reduce.
+
+## ReviewReduce(version, reduce, map?, codec?, initialState?) => Review
+
+construct a view from this reduce function. `version` should be a number,
 and must be provided. If you make a breaking change to either `reduce` or `map`
 then increment `version` and the view will be rebuilt.
 
@@ -45,82 +64,64 @@ then increment `version` and the view will be rebuilt.
 and then if the returned value is not null, it is passed to reduce.
 
 ``` js
-var _value = map(value)
+var _old_value = old_value && map(old_value, old_seq, false)
+var _value = map(value, seq, true)
 if(_value != null)
-  state = reduce(state, _value, seq)
+  state = reduce(state, _value, seq, _old_value, old_seq)
 ```
 
 using a `map` function is useful, because it enables efficiently streaming the realtime
 changes in the state to a remote client.
 
-then, pass the flumeview to `db.use(name, flumeview)`
-and you'll have access to the flumeview methods on `db[name]...`
+then, pass the view to `ssb.revisions.use(name, view)`
+and you'll have access to the view methods on `ssb.revisions[name]`
 
 `codec` (optional) - specify the codec to use in the event your log uses the filesystem.
 `initialState` (optional) - declare an initial state for your reducer. This will be ignored if a persisted state is found.
 
-## db[name].get(cb)
+## ssb.revisions[name].get(cb)
 
 get the current state of the reduce. This will wait until the view is up to date, if necessary.
 
-## db[name].stream({live: boolean}) => PullSource
+## ssb.revisions[name].stream({live: boolean}) => PullSource
 
 Creates a [pull-stream](https://github.com/pull-stream/pull-stream) whose:
 - first value is the current state of the view,
-- following values are not the view state, but the new _values_ (they're had your `map` applied, but the `reducer` hasn't been applied yet).
+- following values are not the view state, but the _values_ (they're had your `map` applied, but the `reducer` hasn't been applied yet).
+- each item starting from the second is an array with two entries: [new_value, old_value]. The old value is supplied when an object was updated with a newer revision (see example above), otherwise the 2nd entry is null.
 
 This is a light-weight for a remote client to keep up to date with the view - get a snapshot, and then update it themselves. This way we don't need to send a massive view every time there's a new log entry.
-
-```js
-var db = Flume(log)
-  .use('stats', Reduce(2, myReducer, myMap))
-
-var viewState // this is our view we're calculating remotely
-pull(
-  db.stats.stream({live:true}),
-  pull.drain(function(value) {
-    if (!view) viewState = value      // store the current snapshot (the first value)
-    else myReducer(viewState, value)  // update the snapshot use reducer + mapped values
-
-    console.log(value)                // do something with 
-  }
-)
-
-db.append(
-  // ... some code that adds new code to the log, triggering stream.
-)
-```
 
 ## Stores
 
 `flumeview-reduce` currently includes several _store_ implementations,
 this is how the actual data is persisted. the current implementations are
 
-* 'flumeview-reduce/store/fs' - store in a file.
-* 'flumeview-reduce/store/local-storage' - `localStorage`, in a browser
-* 'flumeview-reduce/store/remote' - a meta store that keeps a local copy of a remote view.
+* 'store/fs' - store in a file.
+* 'store/local-storage' - `localStorage`, in a browser
+* 'store/remote' - a meta store that keeps a local copy of a remote view.
 
 to set a store, you must set up flumeview-reduce via the lower level dependency injection api.
 
 ``` js
-var createReduce = require('flumeview-reduce/inject')
+var createReduce = require('ssb-review-reduce/inject')
 
 var Reduce = createReduce(Store)
 
 //then use Reduce normally
 
-var view = db.use('view', Reduce(version, reduce, map)) //etc
+var view = ssb.revisions.use('view', Reduce(version, reduce, map)) //etc
 
 //since remote is most interesting
 
-var Remote = require('flumeview-reduce/store/remote')
+var Remote = require('ssb-review-reduce/store/remote')
 function get (opts, cb) {
-  //call the get method on the remote copy of the flumeview
+  //call the get method on the remote copy of the view
   view.get(opts, cb)
 }
 var RemoteReduce = createReduce(Remote(get, Store, codec))
 
-var remoteView = _db.use('view', Reduce(version, reduce, map)) //etc
+var remoteView = _ssb.review.use('view', Reduce(version, reduce, map)) //etc
 //make sure you pass the exact same reduce and map functions to the remote view!
 ```
 
