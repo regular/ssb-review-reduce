@@ -1,7 +1,9 @@
 # ssb-review-reduce
 
-A view into a reduce function for ssb-revisions.
+A view into a reduce function for [ssb-revisions](https://github.com/regular/ssb-revisions).
 This is more or less a drop-in replacement for flumeview-reduce for scuttlebutt applications that need mutable documents.
+
+See also: [ssb-review-level](https://github.com/regular/ssb-review-level)
 
 ## What's different? (in respect to flumeview-reduce)
 
