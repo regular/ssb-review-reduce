@@ -1,7 +1,7 @@
 {
   "name": "ssb-review-reduce",
   "description": "flumeview-reduce, but for mutable ssb messages",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "dependencies": {
     "async-single": "^1.0.5",
     "atomic-file": "^1.1.3",
